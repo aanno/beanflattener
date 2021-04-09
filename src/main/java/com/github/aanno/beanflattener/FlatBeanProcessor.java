@@ -1,5 +1,8 @@
 package com.github.aanno.beanflattener;
 
+import com.github.aanno.beanflattener.annotation.FlatBeanClassFactory;
+import com.github.aanno.beanflattener.annotation.FlatBeanMap;
+import com.github.aanno.beanflattener.annotation.FlatBeanMapper;
 import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -8,22 +11,25 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ExecutableType;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SupportedAnnotationTypes({
-  "com.github.aanno.beanflattener.annotation.FlatBeanClassFactory",
-  "com.github.aanno.beanflattener.annotation.FlatBeanMapper",
-  "com.github.aanno.beanflattener.annotation.FlatBeanMap"
+  "com.github.aanno.beanflattener.annotation.FlatBeanClassFactory"
 })
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @AutoService(Processor.class)
@@ -31,6 +37,33 @@ public class FlatBeanProcessor extends AbstractProcessor {
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+    // annotation: (ClassSymbol) FlatBeanClassFactory
+    for (TypeElement annotation : annotations) {
+      List<? extends Element> enclosed = annotation.getEnclosedElements();
+      // el0: (MethodSymbol) uses()
+      Element el0 = enclosed.get(0);
+      // el1: (MethodSymbol) mappers()
+      Element el1 = enclosed.get(1);
+
+      Set<? extends Element> annotatedElements = roundEnv.getElementsAnnotatedWith(annotation);
+      for (Element annotated : annotatedElements) {
+        FlatBeanClassFactory anno = annotated.getAnnotation(FlatBeanClassFactory.class);
+        List<? extends AnnotationMirror> mirrors = annotated.getAnnotationMirrors();
+        List<?> list = mirrors.stream()
+                .map(m -> m.getElementValues().entrySet().stream())
+                // Map.Entry<ExecutableElement, AnnotationValue>
+                .flatMap(e -> e)
+                .collect(Collectors.toList());
+        FlatBeanMapper[] mapper = anno.mappers();
+        // Class<?>[] uses = anno.uses();
+        System.out.println(anno);
+      }
+      System.out.println(annotatedElements);
+    }
+    return true;
+  }
+
+  public boolean process1(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     for (TypeElement annotation : annotations) {
 
       Set<? extends Element> annotatedElements = roundEnv.getElementsAnnotatedWith(annotation);
@@ -74,7 +107,7 @@ public class FlatBeanProcessor extends AbstractProcessor {
                               .toString()));
 
       try {
-        writeBuilderFile(className, setterMap);
+        writeBuilderFile1(className, setterMap);
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -83,7 +116,7 @@ public class FlatBeanProcessor extends AbstractProcessor {
     return true;
   }
 
-  private void writeBuilderFile(String className, Map<String, String> setterMap)
+  private void writeBuilderFile1(String className, Map<String, String> setterMap)
       throws IOException {
 
     String packageName = null;
