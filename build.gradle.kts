@@ -16,6 +16,8 @@ dependencies {
     // https://www.baeldung.com/java-annotation-processing-builder
     // https://github.com/google/auto
     implementation("com.google.auto.service:auto-service:${autoServiceVersion}")
+    annotationProcessor("com.google.auto.service:auto-service:${autoServiceVersion}")
+
     implementation("com.google.guava:guava:30.1.1-jre")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
