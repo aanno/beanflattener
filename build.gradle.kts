@@ -19,9 +19,8 @@ dependencies {
     annotationProcessor("com.google.auto.service:auto-service:${autoServiceVersion}")
     testAnnotationProcessor(files("build/libs/beanflattener-${version}.jar"))
 
-    implementation("org.projectlombok:lombok:1.18.20")
-
-    implementation("com.google.guava:guava:30.1.1-jre")
+    implementation("com.google.auto:auto-common:1.0")
+    // implementation("com.google.guava:guava:30.1.1-jre")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")

@@ -4,6 +4,7 @@ import com.github.aanno.beanflattener.annotation.FlatBeanClassFactory;
 import com.github.aanno.beanflattener.annotation.FlatBeanMap;
 import com.github.aanno.beanflattener.annotation.FlatBeanMapper;
 import com.github.aanno.beanflattener.model.OutputBean;
+import com.google.auto.common.AnnotationMirrors;
 import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -29,9 +30,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@SupportedAnnotationTypes({
-  "com.github.aanno.beanflattener.annotation.FlatBeanClassFactory"
-})
+@SupportedAnnotationTypes({"com.github.aanno.beanflattener.annotation.FlatBeanClassFactory"})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @AutoService(Processor.class)
 public class FlatBeanProcessor extends AbstractProcessor {
@@ -49,15 +48,21 @@ public class FlatBeanProcessor extends AbstractProcessor {
       Set<? extends Element> annotatedElements = roundEnv.getElementsAnnotatedWith(annotation);
       Set<? extends Element> roots = roundEnv.getRootElements();
       for (Element annotatedFactoryMethod : annotatedElements) {
-        FlatBeanClassFactory fbcfAnnotation = annotatedFactoryMethod.getAnnotation(FlatBeanClassFactory.class);
+        FlatBeanClassFactory fbcfAnnotation =
+            annotatedFactoryMethod.getAnnotation(FlatBeanClassFactory.class);
         List<? extends AnnotationMirror> mirrors = annotatedFactoryMethod.getAnnotationMirrors();
-        List<?> list = mirrors.stream()
-                .map(m -> m.getElementValues().entrySet().stream())
+        List<Map.Entry<?,?>> list =
+            mirrors.stream()
+                .map(m -> AnnotationMirrors.getAnnotationValuesWithDefaults(m).entrySet().stream())
                 // Map.Entry<ExecutableElement, AnnotationValue>
                 .flatMap(e -> e)
                 // we only need the uses() part
                 .filter(e -> e.getKey().toString().equals("uses()"))
                 .collect(Collectors.toList());
+        if (list.size() != 1) {
+          throw new IllegalArgumentException(list.toString());
+        }
+        Object uses = list.get(0).getValue();
         FlatBeanMapper[] mapper = fbcfAnnotation.mappers();
         // Class<?>[] uses = fbcfAnnotation.uses();
 
@@ -66,6 +71,13 @@ public class FlatBeanProcessor extends AbstractProcessor {
         outputBean.setFactoryMethodName(annotatedFactoryMethod.getSimpleName().toString());
         Element factoryClass = annotatedFactoryMethod.getEnclosingElement();
         outputBean.setFactoryClass(factoryClass.toString());
+        if (uses.getClass().isArray()) {
+          for (Object use : (Object[]) uses) {
+            outputBean.addUses(use.toString());
+          }
+        } else {
+          outputBean.addUses(uses.toString());
+        }
 
         System.out.println(fbcfAnnotation);
       }

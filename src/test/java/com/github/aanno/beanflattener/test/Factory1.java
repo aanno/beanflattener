@@ -6,13 +6,15 @@ import com.github.aanno.beanflattener.annotation.FlatBeanMapper;
 
 public interface Factory1 {
 
-    @FlatBeanClassFactory(uses = {Bean2.class}, mappers = {
-            @FlatBeanMapper(value = Bean1.class, mappers = {
-                    @FlatBeanMap(from = "i1", to = "integer")
-            }),
-            @FlatBeanMapper(value = Bean2.class, mappers = {
-                    @FlatBeanMap(from = "string", ignore = true)
-            })
-    })
-    Class<?> generate1(Bean1 wrapped);
+  @FlatBeanClassFactory(
+      uses = {Bean2.class},
+      mappers = {
+        @FlatBeanMapper(
+            value = Bean1.class,
+            mappers = {@FlatBeanMap(from = "i1", to = "integer")}),
+        @FlatBeanMapper(
+            value = Bean2.class,
+            mappers = {@FlatBeanMap(from = "string", ignore = true)})
+      })
+  Class<?> generate1(Bean1 wrapped);
 }
