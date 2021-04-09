@@ -17,6 +17,7 @@ dependencies {
     // https://github.com/google/auto
     implementation("com.google.auto.service:auto-service:${autoServiceVersion}")
     annotationProcessor("com.google.auto.service:auto-service:${autoServiceVersion}")
+    testAnnotationProcessor(files("build/libs/beanflattener-${version}.jar"))
 
     implementation("com.google.guava:guava:30.1.1-jre")
 
