@@ -3,6 +3,7 @@ package com.github.aanno.beanflattener;
 import com.github.aanno.beanflattener.annotation.FlatBeanClassFactory;
 import com.github.aanno.beanflattener.annotation.FlatBeanMap;
 import com.github.aanno.beanflattener.annotation.FlatBeanMapper;
+import com.github.aanno.beanflattener.model.OutputBean;
 import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -46,17 +47,27 @@ public class FlatBeanProcessor extends AbstractProcessor {
       Element el1 = enclosed.get(1);
 
       Set<? extends Element> annotatedElements = roundEnv.getElementsAnnotatedWith(annotation);
-      for (Element annotated : annotatedElements) {
-        FlatBeanClassFactory anno = annotated.getAnnotation(FlatBeanClassFactory.class);
-        List<? extends AnnotationMirror> mirrors = annotated.getAnnotationMirrors();
+      Set<? extends Element> roots = roundEnv.getRootElements();
+      for (Element annotatedFactoryMethod : annotatedElements) {
+        FlatBeanClassFactory fbcfAnnotation = annotatedFactoryMethod.getAnnotation(FlatBeanClassFactory.class);
+        List<? extends AnnotationMirror> mirrors = annotatedFactoryMethod.getAnnotationMirrors();
         List<?> list = mirrors.stream()
                 .map(m -> m.getElementValues().entrySet().stream())
                 // Map.Entry<ExecutableElement, AnnotationValue>
                 .flatMap(e -> e)
+                // we only need the uses() part
+                .filter(e -> e.getKey().toString().equals("uses()"))
                 .collect(Collectors.toList());
-        FlatBeanMapper[] mapper = anno.mappers();
-        // Class<?>[] uses = anno.uses();
-        System.out.println(anno);
+        FlatBeanMapper[] mapper = fbcfAnnotation.mappers();
+        // Class<?>[] uses = fbcfAnnotation.uses();
+
+        OutputBean outputBean = new OutputBean();
+        outputBean.setFactoryAnnotation(fbcfAnnotation);
+        outputBean.setFactoryMethodName(annotatedFactoryMethod.getSimpleName().toString());
+        Element factoryClass = annotatedFactoryMethod.getEnclosingElement();
+        outputBean.setFactoryClass(factoryClass.toString());
+
+        System.out.println(fbcfAnnotation);
       }
       System.out.println(annotatedElements);
     }
