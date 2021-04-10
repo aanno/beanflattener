@@ -5,6 +5,7 @@ import com.github.aanno.beanflattener.annotation.FlatBeanMap;
 import com.github.aanno.beanflattener.annotation.FlatBeanMapper;
 import com.github.aanno.beanflattener.model.OutputBean;
 import com.google.auto.common.AnnotationMirrors;
+import com.google.auto.common.MoreElements;
 import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -51,9 +52,11 @@ public class FlatBeanProcessor extends AbstractProcessor {
         FlatBeanClassFactory fbcfAnnotation =
             annotatedFactoryMethod.getAnnotation(FlatBeanClassFactory.class);
         List<? extends AnnotationMirror> mirrors = annotatedFactoryMethod.getAnnotationMirrors();
-        List<Map.Entry<?,?>> list =
+        List<Map.Entry<?, ?>> list =
             mirrors.stream()
-                .map(m -> AnnotationMirrors.getAnnotationValuesWithDefaults(m).entrySet().stream())
+                // .map(m ->
+                // AnnotationMirrors.getAnnotationValuesWithDefaults(m).entrySet().stream())
+                .map(m -> m.getElementValues().entrySet().stream())
                 // Map.Entry<ExecutableElement, AnnotationValue>
                 .flatMap(e -> e)
                 // we only need the uses() part

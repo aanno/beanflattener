@@ -19,8 +19,12 @@ dependencies {
     annotationProcessor("com.google.auto.service:auto-service:${autoServiceVersion}")
     testAnnotationProcessor(files("build/libs/beanflattener-${version}.jar"))
 
-    implementation("com.google.auto:auto-common:1.0")
+    // All included with auto-service
+    // implementation("com.google.auto:auto-common:1.0")
     // implementation("com.google.guava:guava:30.1.1-jre")
+
+    // https://www.baeldung.com/java-poet
+    implementation("com.squareup:javapoet:1.13.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
@@ -28,6 +32,14 @@ dependencies {
 
 tasks.getByName<Test>("test") {
     useJUnitPlatform()
+}
+
+// https://www.baeldung.com/gradle-fat-jar
+// https://stackoverflow.com/questions/41794914/how-to-create-the-fat-jar-with-gradle-kotlin-script
+tasks.getByName<Jar>("jar") {
+    from(configurations.runtimeClasspath.get().map {
+        if (it.isDirectory) it else zipTree(it)
+    })
 }
 
 // https://docs.gradle.org/current/userguide/gradle_wrapper.html

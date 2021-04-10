@@ -8,7 +8,7 @@ import java.util.TreeSet;
 
 public class OutputBean extends Bean {
 
-  private Set<String> uses;
+  private Set<String> uses = new TreeSet<>();
   private Set<OutputProperty> properties = new TreeSet<>();
   private FlatBeanClassFactory factoryAnnotation;
   private String factoryMethodName;
