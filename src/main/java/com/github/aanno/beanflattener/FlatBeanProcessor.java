@@ -1,8 +1,6 @@
 package com.github.aanno.beanflattener;
 
 import com.github.aanno.beanflattener.annotation.FlatBeanClassFactory;
-import com.github.aanno.beanflattener.annotation.FlatBeanMap;
-import com.github.aanno.beanflattener.annotation.FlatBeanMapper;
 import com.github.aanno.beanflattener.model.OutputBean;
 import com.google.auto.common.AnnotationMirrors;
 import com.google.auto.common.AnnotationValues;
@@ -10,11 +8,11 @@ import com.google.auto.common.BasicAnnotationProcessor;
 import com.google.auto.common.MoreElements;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
@@ -30,13 +28,12 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @SupportedAnnotationTypes({"com.github.aanno.beanflattener.annotation.FlatBeanClassFactory"})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
@@ -52,38 +49,31 @@ public class FlatBeanProcessor extends BasicAnnotationProcessor {
 
     @Override
     public Set<String> annotations() {
-      return Collections.singleton("com.github.aanno.beanflattener.annotation.FlatBeanClassFactory");
+      return Collections.singleton(
+          "com.github.aanno.beanflattener.annotation.FlatBeanClassFactory");
     }
 
     @Override
-    public Set<? extends Element> process(ImmutableSetMultimap<String, Element> elementsByAnnotation) {
+    public Set<? extends Element> process(
+        ImmutableSetMultimap<String, Element> elementsByAnnotation) {
       for (Element annotatedElement : elementsByAnnotation.values()) {
         // annotation is only allowed on methods
         ExecutableElement annotatedFactoryMethod = MoreElements.asExecutable(annotatedElement);
-        FlatBeanClassFactory fbcfAnnotation = annotatedFactoryMethod.getAnnotation(FlatBeanClassFactory.class);
+        FlatBeanClassFactory fbcfAnnotation =
+            annotatedFactoryMethod.getAnnotation(FlatBeanClassFactory.class);
 
         List<? extends AnnotationMirror> mirrors = annotatedFactoryMethod.getAnnotationMirrors();
         Map<String, ImmutableList<AnnotationValue>> fbcfMirrors =
-            mirrors.stream()
-                .map(m -> AnnotationMirrors.getAnnotationValuesWithDefaults(m).entrySet().stream())
-                // Map.Entry<ExecutableElement, AnnotationValue>
-                .flatMap(e -> e)
-                // we only need the uses() part
-                .filter(e -> e.getKey().toString().equals("uses()"))
-                .map(
-                    e ->
-                        new ImmutablePair<String, ImmutableList<AnnotationValue>>(
-                            e.getKey().toString(),
-                            AnnotationValues.getAnnotationValues(e.getValue())))
-                .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
-        if (fbcfMirrors.size() != 1) {
+            resolveAmParameterLists(mirrors, null);
+        if (fbcfMirrors.size() < 1) {
           throw new IllegalArgumentException(fbcfMirrors.toString());
         }
         ImmutableList<AnnotationValue> uses = fbcfMirrors.get("uses()");
         if (uses == null || uses.isEmpty()) {
           throw new IllegalArgumentException();
         }
-        FlatBeanMapper[] mapper = fbcfAnnotation.mappers();
+        // not helpful as FlatBeanMapper contains Classes
+        // FlatBeanMapper[] mappers = fbcfAnnotation.mappers();
         // Class<?>[] uses = fbcfAnnotation.uses();
 
         OutputBean outputBean = new OutputBean();
@@ -93,15 +83,42 @@ public class FlatBeanProcessor extends BasicAnnotationProcessor {
         outputBean.setFactoryClass(MoreElements.asType(factoryClass));
         outputBean.setUses(
             uses.stream()
-                .map(av -> MoreElements.asType(AnnotationValues.getTypeMirror(av).asElement()))
+                .map(av -> typeElementFromAnnotationValue(av))
                 .collect(Collectors.toSet()));
         // outputBean.addAllUses(uses);
+        for (AnnotationValue mapper : fbcfMirrors.get("mappers()")) {
+          AnnotationMirror mapperElement = AnnotationValues.getAnnotationMirror(mapper);
+          ImmutableMap<ExecutableElement, AnnotationValue> parameters =
+              AnnotationMirrors.getAnnotationValuesWithDefaults(mapperElement);
+          Map<String, ImmutableList<AnnotationValue>> map =
+              resolveAmParameterLists(
+                  Collections.singletonList(mapperElement), e -> e.toString().equals("mappers()"));
+          System.out.println(parameters);
+        }
 
         System.out.println(fbcfAnnotation);
       }
       // no deferred elements
       return Collections.emptySet();
     }
+  }
+
+  private TypeElement typeElementFromAnnotationValue(AnnotationValue value) {
+    return MoreElements.asType(AnnotationValues.getTypeMirror(value).asElement());
+  }
+
+  private Map<String, ImmutableList<AnnotationValue>> resolveAmParameterLists(
+      List<? extends AnnotationMirror> mirrors, Predicate<? super ExecutableElement> predicate) {
+    return mirrors.stream()
+        .map(m -> AnnotationMirrors.getAnnotationValuesWithDefaults(m).entrySet().stream())
+        // Map.Entry<ExecutableElement, AnnotationValue>
+        .flatMap(e -> e)
+        .filter(e -> predicate != null ? predicate.test(e.getKey()) : true)
+        .map(
+            e ->
+                new ImmutablePair<String, ImmutableList<AnnotationValue>>(
+                    e.getKey().toString(), AnnotationValues.getAnnotationValues(e.getValue())))
+        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
   }
 
   public boolean process1(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
