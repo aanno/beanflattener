@@ -5,8 +5,12 @@ import com.github.aanno.beanflattener.annotation.FlatBeanMap;
 import com.github.aanno.beanflattener.annotation.FlatBeanMapper;
 import com.github.aanno.beanflattener.model.OutputBean;
 import com.google.auto.common.AnnotationMirrors;
+import com.google.auto.common.AnnotationValues;
 import com.google.auto.common.MoreElements;
 import com.google.auto.service.AutoService;
+import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Processor;
@@ -52,35 +56,39 @@ public class FlatBeanProcessor extends AbstractProcessor {
         FlatBeanClassFactory fbcfAnnotation =
             annotatedFactoryMethod.getAnnotation(FlatBeanClassFactory.class);
         List<? extends AnnotationMirror> mirrors = annotatedFactoryMethod.getAnnotationMirrors();
-        List<Map.Entry<?, ?>> list =
+        Map<String, ImmutableList<AnnotationValue>> fbcfMirrors =
             mirrors.stream()
-                // .map(m ->
-                // AnnotationMirrors.getAnnotationValuesWithDefaults(m).entrySet().stream())
-                .map(m -> m.getElementValues().entrySet().stream())
+                .map(m -> AnnotationMirrors.getAnnotationValuesWithDefaults(m).entrySet().stream())
                 // Map.Entry<ExecutableElement, AnnotationValue>
                 .flatMap(e -> e)
                 // we only need the uses() part
                 .filter(e -> e.getKey().toString().equals("uses()"))
-                .collect(Collectors.toList());
-        if (list.size() != 1) {
-          throw new IllegalArgumentException(list.toString());
+                .map(
+                    e ->
+                        new ImmutablePair<String, ImmutableList<AnnotationValue>>(
+                            e.getKey().toString(),
+                            AnnotationValues.getAnnotationValues(e.getValue())))
+                .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        if (fbcfMirrors.size() != 1) {
+          throw new IllegalArgumentException(fbcfMirrors.toString());
         }
-        Object uses = list.get(0).getValue();
+        ImmutableList<AnnotationValue> uses = fbcfMirrors.get("uses()");
+        if (uses == null || uses.isEmpty()) {
+          throw new IllegalArgumentException();
+        }
         FlatBeanMapper[] mapper = fbcfAnnotation.mappers();
         // Class<?>[] uses = fbcfAnnotation.uses();
 
         OutputBean outputBean = new OutputBean();
         outputBean.setFactoryAnnotation(fbcfAnnotation);
-        outputBean.setFactoryMethodName(annotatedFactoryMethod.getSimpleName().toString());
+        outputBean.setFactoryMethodName(MoreElements.asExecutable(annotatedFactoryMethod));
         Element factoryClass = annotatedFactoryMethod.getEnclosingElement();
-        outputBean.setFactoryClass(factoryClass.toString());
-        if (uses.getClass().isArray()) {
-          for (Object use : (Object[]) uses) {
-            outputBean.addUses(use.toString());
-          }
-        } else {
-          outputBean.addUses(uses.toString());
-        }
+        outputBean.setFactoryClass(MoreElements.asType(factoryClass));
+        outputBean.setUses(
+            uses.stream()
+                .map(av -> MoreElements.asType(AnnotationValues.getTypeMirror(av).asElement()))
+                .collect(Collectors.toSet()));
+        // outputBean.addAllUses(uses);
 
         System.out.println(fbcfAnnotation);
       }

@@ -19,12 +19,15 @@ dependencies {
     annotationProcessor("com.google.auto.service:auto-service:${autoServiceVersion}")
     testAnnotationProcessor(files("build/libs/beanflattener-${version}.jar"))
 
-    // All included with auto-service
+    // All  included with auto-service
     // implementation("com.google.auto:auto-common:1.0")
     // implementation("com.google.guava:guava:30.1.1-jre")
 
     // https://www.baeldung.com/java-poet
     implementation("com.squareup:javapoet:1.13.0")
+    // https://commons.apache.org/proper/commons-lang/
+    // https://commons.apache.org/proper/commons-lang/apidocs/index.html
+    implementation("org.apache.commons:commons-lang3:3.12.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
