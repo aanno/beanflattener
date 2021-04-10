@@ -96,6 +96,19 @@ public class FlatBeanProcessor extends BasicAnnotationProcessor {
           List<AnnotationMirror> mapperElements = Collections.singletonList(mapperElement);
           Map<String, ImmutableList<AnnotationValue>> map =
               resolveAmListParameters(mapperElements, e -> e.toString().equals("mappers()"));
+
+          List<AnnotationMirror> mapMirrors =
+              map.get("mappers()").stream()
+                  .map(AnnotationValues::getAnnotationMirror)
+                  .collect(Collectors.toList());
+          Map<String, TypeElement> converter =
+              resolveAmTypeParameters(mapMirrors, e -> e.toString().equals("converter()"));
+          Map<String, Boolean> ignore =
+              resolveAmValue(mapMirrors, e -> e.toString().equals("ignore()"));
+          Map<String, String> fromTo =
+              resolveAmValue(
+                  mapMirrors, e -> e.toString().equals("from()") || e.toString().equals("to()"));
+
           Map<String, TypeElement> type =
               resolveAmTypeParameters(mapperElements, e -> e.toString().equals("value()"));
           InputBean bean = new InputBean();
@@ -139,6 +152,17 @@ public class FlatBeanProcessor extends BasicAnnotationProcessor {
             e ->
                 new ImmutablePair<String, TypeElement>(
                     e.getKey().toString(), typeElementFromAnnotationValue(e.getValue())))
+        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+  }
+
+  private <T> Map<String, T> resolveAmValue(
+      List<? extends AnnotationMirror> mirrors, Predicate<? super ExecutableElement> predicate) {
+    return mirrors.stream()
+        .map(m -> AnnotationMirrors.getAnnotationValuesWithDefaults(m).entrySet().stream())
+        // Map.Entry<ExecutableElement, AnnotationValue>
+        .flatMap(e -> e)
+        .filter(e -> predicate != null ? predicate.test(e.getKey()) : true)
+        .map(e -> new ImmutablePair<String, T>(e.getKey().toString(), (T) e.getValue()))
         .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
   }
 
