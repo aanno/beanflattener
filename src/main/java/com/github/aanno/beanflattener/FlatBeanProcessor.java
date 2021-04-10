@@ -64,7 +64,7 @@ public class FlatBeanProcessor extends BasicAnnotationProcessor {
 
         List<? extends AnnotationMirror> mirrors = annotatedFactoryMethod.getAnnotationMirrors();
         Map<String, ImmutableList<AnnotationValue>> fbcfMirrors =
-            resolveAmParameterLists(mirrors, null);
+            resolveAmListParameters(mirrors, null);
         if (fbcfMirrors.size() < 1) {
           throw new IllegalArgumentException(fbcfMirrors.toString());
         }
@@ -90,9 +90,11 @@ public class FlatBeanProcessor extends BasicAnnotationProcessor {
           AnnotationMirror mapperElement = AnnotationValues.getAnnotationMirror(mapper);
           ImmutableMap<ExecutableElement, AnnotationValue> parameters =
               AnnotationMirrors.getAnnotationValuesWithDefaults(mapperElement);
+          List<AnnotationMirror> mapperElements = Collections.singletonList(mapperElement);
           Map<String, ImmutableList<AnnotationValue>> map =
-              resolveAmParameterLists(
-                  Collections.singletonList(mapperElement), e -> e.toString().equals("mappers()"));
+              resolveAmListParameters(mapperElements, e -> e.toString().equals("mappers()"));
+          Map<String, TypeElement> type =
+              resolveAmTypeParameters(mapperElements, e -> e.toString().equals("value()"));
           System.out.println(parameters);
         }
 
@@ -107,7 +109,7 @@ public class FlatBeanProcessor extends BasicAnnotationProcessor {
     return MoreElements.asType(AnnotationValues.getTypeMirror(value).asElement());
   }
 
-  private Map<String, ImmutableList<AnnotationValue>> resolveAmParameterLists(
+  private Map<String, ImmutableList<AnnotationValue>> resolveAmListParameters(
       List<? extends AnnotationMirror> mirrors, Predicate<? super ExecutableElement> predicate) {
     return mirrors.stream()
         .map(m -> AnnotationMirrors.getAnnotationValuesWithDefaults(m).entrySet().stream())
@@ -118,6 +120,20 @@ public class FlatBeanProcessor extends BasicAnnotationProcessor {
             e ->
                 new ImmutablePair<String, ImmutableList<AnnotationValue>>(
                     e.getKey().toString(), AnnotationValues.getAnnotationValues(e.getValue())))
+        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+  }
+
+  private Map<String, TypeElement> resolveAmTypeParameters(
+      List<? extends AnnotationMirror> mirrors, Predicate<? super ExecutableElement> predicate) {
+    return mirrors.stream()
+        .map(m -> AnnotationMirrors.getAnnotationValuesWithDefaults(m).entrySet().stream())
+        // Map.Entry<ExecutableElement, AnnotationValue>
+        .flatMap(e -> e)
+        .filter(e -> predicate != null ? predicate.test(e.getKey()) : true)
+        .map(
+            e ->
+                new ImmutablePair<String, TypeElement>(
+                    e.getKey().toString(), typeElementFromAnnotationValue(e.getValue())))
         .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
   }
 
