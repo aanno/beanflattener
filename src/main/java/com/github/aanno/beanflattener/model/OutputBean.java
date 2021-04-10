@@ -9,7 +9,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class OutputBean extends Bean {
+public class OutputBean {
 
   private Set<TypeElement> uses = new TreeSet<>();
   private Set<OutputProperty> properties = new TreeSet<>();
@@ -76,6 +76,9 @@ public class OutputBean extends Bean {
     return MoreObjects.toStringHelper(this)
         .add("uses", uses)
         .add("properties", properties)
+        .add("factoryAnnotation", factoryAnnotation)
+        .add("factoryMethodName", factoryMethodName)
+        .add("factoryClass", factoryClass)
         .toString();
   }
 }

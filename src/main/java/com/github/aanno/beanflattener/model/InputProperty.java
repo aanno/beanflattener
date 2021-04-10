@@ -4,15 +4,15 @@ import com.google.common.base.MoreObjects;
 
 public class InputProperty extends Property {
 
-  private Bean from;
+  private InputBean from;
 
   public InputProperty() {}
 
-  public Bean getFrom() {
+  public InputBean getFrom() {
     return from;
   }
 
-  public void setFrom(Bean from) {
+  public void setFrom(InputBean from) {
     this.from = from;
   }
 

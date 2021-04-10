@@ -1,6 +1,7 @@
 package com.github.aanno.beanflattener;
 
 import com.github.aanno.beanflattener.annotation.FlatBeanClassFactory;
+import com.github.aanno.beanflattener.model.InputBean;
 import com.github.aanno.beanflattener.model.OutputBean;
 import com.google.auto.common.AnnotationMirrors;
 import com.google.auto.common.AnnotationValues;
@@ -8,7 +9,6 @@ import com.google.auto.common.BasicAnnotationProcessor;
 import com.google.auto.common.MoreElements;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,6 +28,7 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -86,16 +87,20 @@ public class FlatBeanProcessor extends BasicAnnotationProcessor {
                 .map(av -> typeElementFromAnnotationValue(av))
                 .collect(Collectors.toSet()));
         // outputBean.addAllUses(uses);
+
+        List<InputBean> inputBeans = new ArrayList<>();
         for (AnnotationValue mapper : fbcfMirrors.get("mappers()")) {
           AnnotationMirror mapperElement = AnnotationValues.getAnnotationMirror(mapper);
-          ImmutableMap<ExecutableElement, AnnotationValue> parameters =
-              AnnotationMirrors.getAnnotationValuesWithDefaults(mapperElement);
+          // ImmutableMap<ExecutableElement, AnnotationValue> parameters =
+          //     AnnotationMirrors.getAnnotationValuesWithDefaults(mapperElement);
           List<AnnotationMirror> mapperElements = Collections.singletonList(mapperElement);
           Map<String, ImmutableList<AnnotationValue>> map =
               resolveAmListParameters(mapperElements, e -> e.toString().equals("mappers()"));
           Map<String, TypeElement> type =
               resolveAmTypeParameters(mapperElements, e -> e.toString().equals("value()"));
-          System.out.println(parameters);
+          InputBean bean = new InputBean();
+          bean.setValue(type.get("value()"));
+          inputBeans.add(bean);
         }
 
         System.out.println(fbcfAnnotation);
