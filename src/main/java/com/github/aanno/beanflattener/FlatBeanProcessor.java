@@ -6,9 +6,11 @@ import com.github.aanno.beanflattener.annotation.FlatBeanMapper;
 import com.github.aanno.beanflattener.model.OutputBean;
 import com.google.auto.common.AnnotationMirrors;
 import com.google.auto.common.AnnotationValues;
+import com.google.auto.common.BasicAnnotationProcessor;
 import com.google.auto.common.MoreElements;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSetMultimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -29,6 +31,7 @@ import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,23 +41,27 @@ import java.util.stream.Stream;
 @SupportedAnnotationTypes({"com.github.aanno.beanflattener.annotation.FlatBeanClassFactory"})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @AutoService(Processor.class)
-public class FlatBeanProcessor extends AbstractProcessor {
+public class FlatBeanProcessor extends BasicAnnotationProcessor {
 
   @Override
-  public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-    // annotation: (ClassSymbol) FlatBeanClassFactory
-    for (TypeElement annotation : annotations) {
-      List<? extends Element> enclosed = annotation.getEnclosedElements();
-      // el0: (MethodSymbol) uses()
-      Element el0 = enclosed.get(0);
-      // el1: (MethodSymbol) mappers()
-      Element el1 = enclosed.get(1);
+  protected Iterable<? extends Step> steps() {
+    return Collections.singleton(new FlatBeanClassStep());
+  }
 
-      Set<? extends Element> annotatedElements = roundEnv.getElementsAnnotatedWith(annotation);
-      Set<? extends Element> roots = roundEnv.getRootElements();
-      for (Element annotatedFactoryMethod : annotatedElements) {
-        FlatBeanClassFactory fbcfAnnotation =
-            annotatedFactoryMethod.getAnnotation(FlatBeanClassFactory.class);
+  private class FlatBeanClassStep implements Step {
+
+    @Override
+    public Set<String> annotations() {
+      return Collections.singleton("com.github.aanno.beanflattener.annotation.FlatBeanClassFactory");
+    }
+
+    @Override
+    public Set<? extends Element> process(ImmutableSetMultimap<String, Element> elementsByAnnotation) {
+      for (Element annotatedElement : elementsByAnnotation.values()) {
+        // annotation is only allowed on methods
+        ExecutableElement annotatedFactoryMethod = MoreElements.asExecutable(annotatedElement);
+        FlatBeanClassFactory fbcfAnnotation = annotatedFactoryMethod.getAnnotation(FlatBeanClassFactory.class);
+
         List<? extends AnnotationMirror> mirrors = annotatedFactoryMethod.getAnnotationMirrors();
         Map<String, ImmutableList<AnnotationValue>> fbcfMirrors =
             mirrors.stream()
@@ -92,9 +99,9 @@ public class FlatBeanProcessor extends AbstractProcessor {
 
         System.out.println(fbcfAnnotation);
       }
-      System.out.println(annotatedElements);
+      // no deferred elements
+      return Collections.emptySet();
     }
-    return true;
   }
 
   public boolean process1(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
