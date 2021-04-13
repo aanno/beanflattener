@@ -4,20 +4,23 @@ import com.google.common.base.MoreObjects;
 
 public class InputProperty extends Property {
 
-  private InputBean from;
+  private String from;
 
   public InputProperty() {}
 
-  public InputBean getFrom() {
+  public String getFrom() {
     return from;
   }
 
-  public void setFrom(InputBean from) {
+  public void setFrom(String from) {
     this.from = from;
   }
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("from", from).toString();
+    return MoreObjects.toStringHelper(this)
+            .add("parentProp", super.toString())
+            .add("from", from)
+            .toString();
   }
 }

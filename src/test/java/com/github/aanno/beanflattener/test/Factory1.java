@@ -11,7 +11,10 @@ public interface Factory1 {
       mappers = {
         @FlatBeanMapper(
             value = Bean1.class,
-            mappers = @FlatBeanMap(from = "i1", to = "integer")),
+            mappers = {
+              @FlatBeanMap(from = "i1", to = "integer"),
+              @FlatBeanMap(from = "a", to = "b")
+            }),
         @FlatBeanMapper(
             value = Bean2.class,
             mappers = {@FlatBeanMap(from = "string", ignore = true)})

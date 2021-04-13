@@ -12,7 +12,7 @@ import java.util.TreeSet;
 public class OutputBean {
 
   private Set<TypeElement> uses = new TreeSet<>();
-  private Set<OutputProperty> properties = new TreeSet<>();
+  private Set<InputBean> inputBeans = new TreeSet<>();
   private FlatBeanClassFactory factoryAnnotation;
   private ExecutableElement factoryMethodName;
   private TypeElement factoryClass;
@@ -35,10 +35,6 @@ public class OutputBean {
     this.uses = uses;
   }
 
-  public Set<OutputProperty> getProperties() {
-    return properties;
-  }
-
   public FlatBeanClassFactory getFactoryAnnotation() {
     return factoryAnnotation;
   }
@@ -46,15 +42,6 @@ public class OutputBean {
   public void setFactoryAnnotation(FlatBeanClassFactory factoryAnnotation) {
     this.factoryAnnotation = factoryAnnotation;
   }
-
-  public void addProperty(OutputProperty property) {
-    properties.add(property);
-  }
-
-  public void setProperties(Set<OutputProperty> properties) {
-    this.properties = properties;
-  }
-
   public ExecutableElement getFactoryMethodName() {
     return factoryMethodName;
   }
@@ -71,11 +58,25 @@ public class OutputBean {
     this.factoryClass = factoryClass;
   }
 
+  public Set<InputBean> getInputBeans()
+  {
+    return inputBeans;
+  }
+
+  public void addInputBean(InputBean inputBean) {
+    inputBeans.add(inputBean);
+  }
+
+  public void setInputBeans(Set<InputBean> inputBeans)
+  {
+    this.inputBeans = inputBeans;
+  }
+
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("uses", uses)
-        .add("properties", properties)
+        .add("inputBeans", inputBeans)
         .add("factoryAnnotation", factoryAnnotation)
         .add("factoryMethodName", factoryMethodName)
         .add("factoryClass", factoryClass)
