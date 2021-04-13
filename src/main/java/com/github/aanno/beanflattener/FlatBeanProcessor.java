@@ -128,18 +128,18 @@ public class FlatBeanProcessor extends BasicAnnotationProcessor {
               for (int i = 0; i < converters.size(); ++i) {
                 Map<String, String> fromTo = fromTos.get(i);
                 TypeElement converter = converters.get(i).get("converter()");
-                Object ignore = ignores.get(i).get("ignore()");
+                Boolean ignore = ignores.get(i).get("ignore()");
 
                 InputProperty property = new InputProperty();
-                // property.setClazz();
+                property.setTypeElement(type);
                 property.setName(fromTo.get("to()"));
                 property.setFrom(fromTo.get("from()"));
+                property.setIgnore(ignore.booleanValue());
                 bean.addProperty(property);
               }
             }
           }
         }
-
         System.out.println(fbcfAnnotation);
       }
       // no deferred elements

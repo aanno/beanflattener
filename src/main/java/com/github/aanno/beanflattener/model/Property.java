@@ -4,10 +4,12 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
 
+import javax.lang.model.element.TypeElement;
+
 public class Property implements Comparable<Property> {
 
   private String name;
-  private String clazz;
+  private TypeElement typeElement;
 
   public Property() {}
 
@@ -19,12 +21,12 @@ public class Property implements Comparable<Property> {
     this.name = name;
   }
 
-  public String getClazz() {
-    return clazz;
+  public TypeElement getTypeElement() {
+    return typeElement;
   }
 
-  public void setClazz(String clazz) {
-    this.clazz = clazz;
+  public void setTypeElement(TypeElement typeElement) {
+    this.typeElement = typeElement;
   }
 
   @Override
@@ -32,24 +34,31 @@ public class Property implements Comparable<Property> {
     if (this == o) return true;
     if (!(o instanceof Property)) return false;
     Property property = (Property) o;
-    return Objects.equal(name, property.name) && Objects.equal(clazz, property.clazz);
+    return Objects.equal(name, property.name)
+        && Objects.equal(
+            typeElement.getQualifiedName().toString(),
+            property.typeElement.getQualifiedName().toString());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(name, typeElement);
   }
 
   @Override
   public int compareTo(Property that) {
     return ComparisonChain.start()
-            .compare(this.name, that.name)
-            // .compare(this.clazz, that.clazz)
-            .result();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(name, clazz);
+        .compare(this.name, that.name)
+        .compare(
+            this.typeElement.getQualifiedName().toString(),
+            that.typeElement.getQualifiedName().toString())
+        .result();
   }
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("name", name).add("clazz", clazz).toString();
+    return MoreObjects.toStringHelper(this)
+            .add("name", name)
+            .add("typeElement", typeElement).toString();
   }
 }

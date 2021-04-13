@@ -17,7 +17,7 @@ public interface Factory1 {
             }),
         @FlatBeanMapper(
             value = Bean2.class,
-            mappers = {@FlatBeanMap(from = "string", ignore = true)})
+            mappers = @FlatBeanMap(from = "string", ignore = true))
       })
   Class<?> generate1(Bean1 wrapped);
 }
